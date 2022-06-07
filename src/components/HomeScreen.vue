@@ -1,15 +1,16 @@
 <template>
-  <v-container class="d-flex flex-column justify-center" style="height: 100vh">
-    <div class="d-flex justify-center mb-11">
+  <v-container class="d-flex flex-column" style="height: 100vh">
+    <div class="d-flex justify-center mb-11 mt-2">
       <v-icon x-large class="mr-2" color="primary">mdi-check-circle</v-icon>
       <h2 class="text-h3">DO IT</h2>
     </div>
-    <div class="d-flex mb-5">
+    <div class="d-flex mb-5 mx-3">
       <v-text-field
         class="rounded-0"
         hide-details
         outlined
         label="To do..."
+        @keyup.enter="newTodo"
         v-model="mytodo"
       ></v-text-field>
       <v-btn
@@ -22,17 +23,39 @@
         <v-icon large> mdi-plus </v-icon>
       </v-btn>
     </div>
-    <div class="d-flex align-center mb-9">
+    <div class="d-flex align-center mb-9 mx-3">
       <progressBar :level="level" />
-      <p class="ml-4 mb-0 text-h5">{{ lengthTodosFinish }}/{{ lengthTodos }}</p>
+      <p
+        class="ml-4 mb-0 text-h5"
+        :class="{ 'text-h6': $vuetify.breakpoint.mobile }"
+      >
+        {{ lengthTodosFinish }}/{{ lengthTodos }}
+      </p>
     </div>
-    <div class="overflow-y-auto overflow-x-hidden">
-      <div class="h-full relative">
-        <v-row class="absolute ma-0">
+    <div class="overflow-y-auto overflow-x-hidden h-full">
+      <div
+        v-if="lengthTodos === 0"
+        class="d-flex flex-column justify-center align-center h-full"
+      >
+        <img src="@/assets/check.svg" alt="" />
+        <p
+          class="text-h text-center mt-2"
+          :class="{ 'text-body-1': $vuetify.breakpoint.mobile }"
+        >
+          Nada aqui, começe a criar seus ToDos!
+        </p>
+      </div>
+      <div v-else class="h-full relative">
+        <transition-group
+          name="list-complete"
+          class="absolute ma-0 row"
+          tag="div"
+        >
           <v-col
             :cols="$vuetify.breakpoint.mobile ? 12 : 6"
             v-for="todo in todos"
             :key="todo.id"
+            class="list-complete-item"
             style="position: relative"
           >
             <v-card
@@ -73,7 +96,7 @@
               >mdi-check-circle</v-icon
             >
           </v-col>
-        </v-row>
+        </transition-group>
       </div>
     </div>
   </v-container>
@@ -101,3 +124,16 @@ export default {
   },
 };
 </script>
+<style scoped>
+.list-complete-item {
+  transition: all 0.3s;
+}
+.list-complete-enter,
+.list-complete-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.list-complete-leave-active {
+  position: absolute;
+}
+</style>

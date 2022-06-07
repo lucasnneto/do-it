@@ -9,7 +9,7 @@
       "
     ></div>
     <div
-      style="position: absolute; height: 30px"
+      style="position: absolute; height: 30px; transition: all 0.3s"
       class="primary"
       :style="{ width: `${level}%` }"
     ></div>
