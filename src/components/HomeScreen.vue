@@ -18,7 +18,9 @@
           {{ formatDate(edit.dateFinished) }}
         </p>
         <div class="d-flex">
-          <v-btn @click="editar" color="primary" class="mr-3">Salvar</v-btn>
+          <v-btn @click="editar" color="primary" class="mr-3 secondary--text"
+            >Salvar</v-btn
+          >
           <v-btn @click="closeModal" outlined color="primary">Cancelar</v-btn>
         </div>
       </v-card>
@@ -122,7 +124,7 @@
         :disabled="mytodo.length === 0"
         @click="newTodo"
       >
-        <v-icon large> mdi-plus </v-icon>
+        <v-icon color="secondary" large> mdi-plus </v-icon>
       </v-btn>
     </div>
     <div
@@ -165,7 +167,11 @@
           >
             <v-card
               class="pt-5 px-4 d-flex flex-column justify-space-between"
-              :style="todo.finished ? 'border: 1px solid #FF8282' : ''"
+              :style="
+                todo.finished
+                  ? `border: 1px solid ${$vuetify.theme.themes.dark.primary}`
+                  : ''
+              "
               height="190"
             >
               <v-card-text class="text--primary overflow-hidden">
@@ -323,7 +329,7 @@ export default {
     },
     formatDate(value) {
       if (!value) return "";
-      return moment(value).format("DD-MM-YYYY hh:mm");
+      return moment(value).format("DD/MM/YYYY HH:mm");
     },
     closeModal() {
       this.edit = { id: "", dateFinished: "", finished: false, msg: "" };
