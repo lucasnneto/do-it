@@ -1,8 +1,58 @@
 <template>
   <v-container class="d-flex flex-column" style="height: 100vh">
-    <div class="d-flex justify-center mb-11 mt-2">
-      <v-icon x-large class="mr-2" color="primary">mdi-check-circle</v-icon>
-      <h2 class="text-h3">DO IT</h2>
+    <v-dialog v-model="dialog" max-width="450px" transition="dialog-transition">
+      <v-card class="pa-3 pt-10 rounded-0 d-flex flex-column">
+        <v-text-field
+          class="rounded-0"
+          hide-details
+          outlined
+          @keyup.enter="editar"
+          label="To do..."
+          v-model="edit.msg"
+        ></v-text-field>
+        <v-switch
+          v-model="edit.finished"
+          :label="edit.finished ? 'Finalizada' : 'Em aguardo'"
+        ></v-switch>
+        <p class="text-body-2 ml-4">
+          {{ formatDate(edit.dateFinished) }}
+        </p>
+        <div class="d-flex">
+          <v-btn @click="editar" color="primary" class="mr-3">Salvar</v-btn>
+          <v-btn @click="closeModal" outlined color="primary">Cancelar</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+    <div
+      class="mt-2 mx-3 d-flex justify-space-between"
+      :class="{
+        'flex-column mb-5': $vuetify.breakpoint.mobile,
+        'mb-11': !$vuetify.breakpoint.mobile,
+      }"
+    >
+      <div class="d-flex">
+        <v-icon x-large class="mr-2" color="primary">mdi-check-circle</v-icon>
+        <h2 class="text-h3">DO IT</h2>
+      </div>
+      <div class="d-flex" :class="{ 'mt-2': $vuetify.breakpoint.mobile }">
+        <v-select
+          outlined
+          hide-details
+          :items="['Criação', 'Aguardando', 'Finalizada']"
+          v-model="filtro"
+          label="Ordernar"
+        ></v-select>
+        <v-btn
+          icon
+          outlined
+          x-large
+          class="ml-3"
+          @click="exportar"
+          color="primary"
+        >
+          <v-icon>mdi-database-export</v-icon>
+        </v-btn>
+      </div>
     </div>
     <div class="d-flex mb-5 mx-3">
       <v-text-field
@@ -53,7 +103,7 @@
         >
           <v-col
             :cols="$vuetify.breakpoint.mobile ? 12 : 6"
-            v-for="todo in todos"
+            v-for="todo in filterTodo"
             :key="todo.id"
             class="list-complete-item"
             style="position: relative"
@@ -68,24 +118,34 @@
                   <p class="mb-0">{{ todo.msg }}</p>
                 </div>
               </v-card-text>
-              <v-card-actions class="d-flex justify-space-between">
-                <v-btn
-                  color="primary"
-                  text
-                  :disabled="todo.finished"
-                  @click="FINISH_TODO(todo.id)"
-                >
-                  {{ todo.finished ? "COMPLETO" : "FINALIZAR" }}
-                </v-btn>
-                <v-btn
-                  v-if="todo.finished"
-                  icon
-                  large
-                  color="primary"
-                  @click="DELETE_TODO(todo.id)"
-                >
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
+              <v-card-actions class="d-flex flex-column align-start">
+                <p class="text-body-2 ml-4">
+                  {{ formatDate(todo.dateFinished) }}
+                </p>
+                <div class="d-flex justify-space-between" style="width: 100%">
+                  <v-btn
+                    color="primary"
+                    text
+                    :disabled="todo.finished"
+                    @click="FINISH_TODO(todo.id)"
+                  >
+                    {{ todo.finished ? "COMPLETO" : "FINALIZAR" }}
+                  </v-btn>
+                  <div class="d-flex">
+                    <v-btn icon large color="primary" @click="editModal(todo)">
+                      <v-icon>mdi-pencil</v-icon>
+                    </v-btn>
+                    <v-btn
+                      v-if="todo.finished"
+                      icon
+                      large
+                      color="primary"
+                      @click="DELETE_TODO(todo.id)"
+                    >
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
               </v-card-actions>
             </v-card>
             <v-icon
@@ -104,6 +164,7 @@
 
 <script>
 import { mapActions, mapGetters } from "vuex";
+import moment from "moment";
 import progressBar from "./progressBar.vue";
 export default {
   name: "HomeScreen",
@@ -111,15 +172,68 @@ export default {
 
   data: () => ({
     mytodo: "",
+    dialog: false,
+    filtro: "Criação",
+    edit: {
+      id: "",
+      dateFinished: "",
+      finished: false,
+      msg: "",
+    },
   }),
+  watch: {
+    "edit.finished"(value) {
+      if (value) {
+        this.edit.dateFinished = moment();
+      } else {
+        this.edit.dateFinished = "";
+      }
+    },
+  },
   computed: {
     ...mapGetters(["level", "lengthTodos", "lengthTodosFinish", "todos"]),
+    filterTodo() {
+      const todos = [...this.todos];
+      if (this.filtro === "Aguardando") {
+        todos.sort((a, b) => {
+          return a.finished - b.finished;
+        });
+      } else if (this.filtro === "Finalizada") {
+        todos.sort((a, b) => {
+          return b.finished - a.finished;
+        });
+      }
+
+      return todos;
+    },
   },
   methods: {
-    ...mapActions(["ADD_TODO", "FINISH_TODO", "DELETE_TODO"]),
+    ...mapActions(["ADD_TODO", "FINISH_TODO", "DELETE_TODO", "UPDATE_TODO"]),
+    exportar() {
+      var link = document.createElement("a");
+      link.download = "dados_" + moment() + ".json";
+      link.href = "data:text/json;charset=utf-8," + JSON.stringify(this.todos);
+      link.click();
+    },
+    formatDate(value) {
+      if (!value) return "";
+      return moment(value).format("DD-MM-YYYY hh:mm");
+    },
+    closeModal() {
+      this.edit = { id: "", dateFinished: "", finished: false, msg: "" };
+      this.dialog = false;
+    },
+    editModal(todo) {
+      this.edit = { ...todo };
+      this.dialog = true;
+    },
     newTodo() {
       this.ADD_TODO(this.mytodo);
       this.mytodo = "";
+    },
+    editar() {
+      this.UPDATE_TODO(this.edit);
+      this.dialog = false;
     },
   },
 };

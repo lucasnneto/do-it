@@ -1,6 +1,7 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createPersistedState from "vuex-persistedstate";
+import moment from "moment";
 Vue.use(Vuex);
 
 export default new Vuex.Store({
@@ -39,6 +40,7 @@ export default new Vuex.Store({
     ADD_TODO({ commit }, payload) {
       const todo = {
         msg: payload,
+        dateFinished: "",
         id: Math.floor(Date.now() * Math.random()).toString(36),
         finished: false,
       };
@@ -49,11 +51,15 @@ export default new Vuex.Store({
       if (index !== -1) {
         const todo = {
           msg: state.todos[index].msg,
+          dateFinished: moment(),
           id: payload,
           finished: true,
         };
         commit("update", todo);
       }
+    },
+    UPDATE_TODO({ commit }, payload) {
+      commit("update", payload);
     },
     DELETE_TODO({ commit }, payload) {
       commit("delete", payload);
