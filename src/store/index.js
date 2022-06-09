@@ -20,6 +20,9 @@ export default new Vuex.Store({
         : (getters.lengthTodosFinish / getters.lengthTodos) * 100,
   },
   mutations: {
+    set(state, todos) {
+      state.todos = todos;
+    },
     post(state, todo) {
       state.todos.push(todo);
     },
@@ -60,6 +63,9 @@ export default new Vuex.Store({
     },
     UPDATE_TODO({ commit }, payload) {
       commit("update", payload);
+    },
+    SET_TODOS({ commit }, payload) {
+      commit("set", payload);
     },
     DELETE_TODO({ commit }, payload) {
       commit("delete", payload);

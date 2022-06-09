@@ -23,6 +23,15 @@
         </div>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialog2" max-width="400px">
+      <v-alert type="warning" prominent>
+        <p>
+          Atenção essa ação limpa toda sua lista de ToDos para inserir a nova
+        </p>
+        <v-btn class="mr-1" @click="importar">Enviar</v-btn>
+        <v-btn outlined @click="dialog2 = false">Cancelar</v-btn>
+      </v-alert>
+    </v-dialog>
     <div
       class="mt-2 mx-3 d-flex justify-space-between"
       :class="{
@@ -30,11 +39,42 @@
         'mb-11': !$vuetify.breakpoint.mobile,
       }"
     >
-      <div class="d-flex">
-        <v-icon x-large class="mr-2" color="primary">mdi-check-circle</v-icon>
-        <h2 class="text-h3">DO IT</h2>
+      <div class="d-flex justify-space-between align-center">
+        <div class="d-flex align-center">
+          <v-icon
+            :x-large="!$vuetify.breakpoint.mobile"
+            class="mr-2"
+            color="primary"
+            >mdi-check-circle</v-icon
+          >
+          <h2
+            class="text-h3"
+            :class="{ 'text-body-1': $vuetify.breakpoint.mobile }"
+          >
+            DO IT
+            {{
+              $vuetify.breakpoint.mobile
+                ? "- " + lengthTodosFinish + "/" + lengthTodos
+                : ""
+            }}
+          </h2>
+        </div>
+        <v-btn
+          v-if="$vuetify.breakpoint.mobile"
+          icon
+          @click="showDetails = !showDetails"
+        >
+          <v-icon>{{ showDetails ? "mdi-menu-up" : "mdi-menu-down" }}</v-icon>
+        </v-btn>
       </div>
-      <div class="d-flex" :class="{ 'mt-2': $vuetify.breakpoint.mobile }">
+      <div
+        v-if="
+          !$vuetify.breakpoint.mobile ||
+          ($vuetify.breakpoint.mobile && showDetails)
+        "
+        class="d-flex"
+        :class="{ 'mt-2': $vuetify.breakpoint.mobile }"
+      >
         <v-select
           outlined
           hide-details
@@ -42,16 +82,28 @@
           v-model="filtro"
           label="Ordernar"
         ></v-select>
-        <v-btn
-          icon
-          outlined
-          x-large
-          class="ml-3"
-          @click="exportar"
-          color="primary"
-        >
-          <v-icon>mdi-database-export</v-icon>
-        </v-btn>
+        <v-menu offset-y>
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              icon
+              x-large
+              class="ml-3"
+              v-bind="attrs"
+              v-on="on"
+              color="primary"
+            >
+              <v-icon> mdi-dots-vertical </v-icon>
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item @click="exportar">
+              <v-list-item-title>Exportar</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="dialog2 = true">
+              <v-list-item-title>Importar</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </div>
     </div>
     <div class="d-flex mb-5 mx-3">
@@ -73,7 +125,10 @@
         <v-icon large> mdi-plus </v-icon>
       </v-btn>
     </div>
-    <div class="d-flex align-center mb-9 mx-3">
+    <div
+      class="d-flex align-center mb-9 mx-3"
+      v-if="!$vuetify.breakpoint.mobile"
+    >
       <progressBar :level="level" />
       <p
         class="ml-4 mb-0 text-h5"
@@ -136,7 +191,6 @@
                       <v-icon>mdi-pencil</v-icon>
                     </v-btn>
                     <v-btn
-                      v-if="todo.finished"
                       icon
                       large
                       color="primary"
@@ -171,9 +225,11 @@ export default {
   components: { progressBar },
 
   data: () => ({
+    showDetails: false,
     mytodo: "",
     dialog: false,
     filtro: "Criação",
+    dialog2: false,
     edit: {
       id: "",
       dateFinished: "",
@@ -208,12 +264,62 @@ export default {
     },
   },
   methods: {
-    ...mapActions(["ADD_TODO", "FINISH_TODO", "DELETE_TODO", "UPDATE_TODO"]),
+    ...mapActions([
+      "ADD_TODO",
+      "FINISH_TODO",
+      "DELETE_TODO",
+      "UPDATE_TODO",
+      "SET_TODOS",
+    ]),
     exportar() {
       var link = document.createElement("a");
       link.download = "dados_" + moment() + ".json";
       link.href = "data:text/json;charset=utf-8," + JSON.stringify(this.todos);
       link.click();
+    },
+    importar() {
+      this.dialog2 = false;
+      var input = document.createElement("INPUT");
+      input.setAttribute("type", "file");
+      input.setAttribute("accept", "application/JSON");
+      input.addEventListener(
+        "change",
+        () => {
+          let reader = new FileReader();
+          reader.onload = (event) => {
+            let str = event.target.result;
+            let json = JSON.parse(str);
+            if (Array.isArray(json)) {
+              const refinedData = json
+                .map((el) => ({
+                  msg: el.msg || "",
+                  id: el.id,
+                  finished: el.finished || false,
+                  dateFinished: el.dateFinished || "",
+                }))
+                .filter((el) => {
+                  return !!el.id;
+                });
+              if (refinedData.length > 0) {
+                this.SET_TODOS(refinedData);
+              } else {
+                this.$toast.error(
+                  "A lista enviada esta vazia, ou não tem dados válidos, retornado a lista anterior"
+                );
+              }
+            } else {
+              this.$toast.error(
+                "Ocorreu um erro ao tentar atualizar a lista, retornado a lista anterior"
+              );
+            }
+          };
+
+          // Read the file
+          reader.readAsText(input.files[0]);
+        },
+        false
+      );
+      input.click();
     },
     formatDate(value) {
       if (!value) return "";
