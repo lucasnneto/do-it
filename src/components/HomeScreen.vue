@@ -311,7 +311,7 @@ export default {
   computed: {
     ...mapGetters(["level", "lengthTodos", "lengthTodosFinish", "todos"]),
     userUrl() {
-      return window.location.origin;
+      return window.location.origin + window.location.pathname;
     },
     filterTodo() {
       const todos = [...this.todos];
@@ -334,8 +334,12 @@ export default {
     if (myParam) {
       var bytes = CryptoJS.AES.decrypt(myParam, "doandit");
       var originalText = bytes.toString(CryptoJS.enc.Utf8);
-      this.paramsDoIt = JSON.parse(originalText);
-      this.dialog4 = true;
+      try {
+        this.paramsDoIt = JSON.parse(originalText);
+        this.dialog4 = true;
+      } catch (e) {
+        this.$toast.error("URL está incorreta ou inválida!");
+      }
     }
   },
   methods: {
@@ -357,6 +361,7 @@ export default {
         this.paramsDoIt = [];
         this.dialog4 = false;
         this.clearURL();
+        this.$toast.success("Importado com sucesso!!");
       } else {
         this.$toast.error(
           "Ocorreu um erro ao importar, deixamos tudo como estava antes :("
