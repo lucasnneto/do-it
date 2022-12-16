@@ -28,7 +28,10 @@
     <v-dialog v-model="dialog3" max-width="500px">
       <v-card class="pa-10">
         <h2 class="text-center mb-4">Como deseja exportar?</h2>
-        <div class="d-flex align-center">
+        <div
+          class="d-flex align-center"
+          :class="$vuetify.breakpoint.mobile ? 'flex-column' : ''"
+        >
           <v-btn color="primary" class="black--text" @click="dowloadFile">
             Baixar Arquivo
           </v-btn>
