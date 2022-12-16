@@ -10,11 +10,13 @@
     "deploy": "push-dir --dir=dist --branch=gh-pages --cleanup"
   },
   "dependencies": {
+    "@chenfengyuan/vue-qrcode": "^1.0.2",
+    "connect-history-api-fallback": "^1.6.0",
     "core-js": "^3.8.3",
+    "crypto-js": "^4.1.1",
+    "express": "^4.17.1",
     "moment": "^2.29.3",
     "vue": "^2.6.14",
-    "connect-history-api-fallback": "^1.6.0",
-    "express": "^4.17.1",
     "vue-toast-notification": "^0.6.2",
     "vuetify": "^2.6.0",
     "vuex": "^3.6.2",

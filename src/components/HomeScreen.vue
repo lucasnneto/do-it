@@ -1,5 +1,53 @@
 <template>
   <v-container class="d-flex flex-column" style="height: 100vh">
+    <v-dialog v-model="dialog4" max-width="500px">
+      <v-card class="pa-10">
+        <h2 class="text-center mb-4">Deseja importar?</h2>
+        <p>Encontramos uma lista nova de TO IT. Deseja importar?</p>
+        <p class="primary--text">
+          Obs. Essa ação vai apagar todos os já existentes
+        </p>
+        <div class="d-flex">
+          <v-btn
+            @click="importList"
+            width="50%"
+            color="primary"
+            class="black--text mr-2"
+            >importar</v-btn
+          >
+          <v-btn
+            width="50%"
+            @click="(dialog4 = false), clearURL()"
+            color="white"
+            class="black--text"
+            >cancelar</v-btn
+          >
+        </div>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="dialog3" max-width="500px">
+      <v-card class="pa-10">
+        <h2 class="text-center mb-4">Como deseja exportar?</h2>
+        <div class="d-flex align-center">
+          <v-btn color="primary" class="black--text" @click="dowloadFile">
+            Baixar Arquivo
+          </v-btn>
+          <h2 class="mx-3">OU</h2>
+          <vue-qrcode
+            :value="dataCrpyto"
+            :options="{ width: 200, margin: 2 }"
+          ></vue-qrcode>
+        </div>
+        <p class="link-text" @click="copyLink">{{ dataCrpyto }}</p>
+        <v-btn
+          @click="dialog3 = false"
+          color="white"
+          class="black--text mt-3"
+          block
+          >Fechar</v-btn
+        >
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="dialog" max-width="450px" transition="dialog-transition">
       <v-card class="pa-3 pt-10 rounded-0 d-flex flex-column">
         <v-text-field
@@ -226,16 +274,21 @@
 import { mapActions, mapGetters } from "vuex";
 import moment from "moment";
 import progressBar from "./progressBar.vue";
+import VueQrcode from "@chenfengyuan/vue-qrcode";
+import CryptoJS from "crypto-js";
 export default {
   name: "HomeScreen",
-  components: { progressBar },
-
+  components: { progressBar, VueQrcode },
   data: () => ({
     showDetails: false,
     mytodo: "",
     dialog: false,
     filtro: "Criação",
     dialog2: false,
+    dataCrpyto: "",
+    dialog3: false,
+    dialog4: false,
+    paramsDoIt: [],
     edit: {
       id: "",
       dateFinished: "",
@@ -254,6 +307,9 @@ export default {
   },
   computed: {
     ...mapGetters(["level", "lengthTodos", "lengthTodosFinish", "todos"]),
+    userUrl() {
+      return window.location.origin;
+    },
     filterTodo() {
       const todos = [...this.todos];
       if (this.filtro === "Aguardando") {
@@ -269,6 +325,16 @@ export default {
       return todos;
     },
   },
+  mounted() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const myParam = urlParams.get("data");
+    if (myParam) {
+      var bytes = CryptoJS.AES.decrypt(myParam, "doandit");
+      var originalText = bytes.toString(CryptoJS.enc.Utf8);
+      this.paramsDoIt = JSON.parse(originalText);
+      this.dialog4 = true;
+    }
+  },
   methods: {
     ...mapActions([
       "ADD_TODO",
@@ -277,11 +343,43 @@ export default {
       "UPDATE_TODO",
       "SET_TODOS",
     ]),
-    exportar() {
+    clearURL() {
+      if (location.href.includes("?")) {
+        history.pushState({}, null, location.href.split("?")[0]);
+      }
+    },
+    importList() {
+      if (Array.isArray(this.paramsDoIt) && this.paramsDoIt.length) {
+        this.SET_TODOS(this.paramsDoIt);
+        this.paramsDoIt = [];
+        this.dialog4 = false;
+        this.clearURL();
+      } else {
+        this.$toast.error(
+          "Ocorreu um erro ao importar, deixamos tudo como estava antes :("
+        );
+      }
+    },
+    dowloadFile() {
       var link = document.createElement("a");
       link.download = "dados_" + moment() + ".json";
       link.href = "data:text/json;charset=utf-8," + JSON.stringify(this.todos);
       link.click();
+      this.dialog3 = false;
+    },
+    copyLink() {
+      navigator.clipboard.writeText(this.dataCrpyto);
+      this.dialog3 = false;
+      this.$toast.success("Copiado para área de transferência");
+    },
+    exportar() {
+      this.dialog3 = true;
+      var cripto = CryptoJS.AES.encrypt(
+        JSON.stringify(this.todos),
+        "doandit"
+      ).toString();
+      const data = new URLSearchParams({ data: cripto });
+      this.dataCrpyto = this.userUrl + "?" + data.toString();
     },
     importar() {
       this.dialog2 = false;
@@ -361,5 +459,18 @@ export default {
 }
 .list-complete-leave-active {
   position: absolute;
+}
+.link-text {
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: rgb(61, 61, 61);
+  border: 2px dashed gray;
+  max-width: 100%;
+  padding: 1em;
+  margin-top: 20px;
+  margin-bottom: 0.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
